@@ -1,8 +1,18 @@
 import mongoose from "mongoose";
 
-export async function connectToDatabase(){
-    mongoose.connection.on('connected', ()=>{
-        console.log("Successfully connected to MongoDB.")
-    })
-    await mongoose.connect(process.env.MONGODB_URI)
+let connectionPromise = null;
+
+export async function connectToDatabase() {
+    if (mongoose.connection.readyState === 1) return;
+
+    if (!connectionPromise) {
+        connectionPromise = mongoose
+            .connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 5000 })
+            .then(() => console.log("Successfully connected to MongoDB."))
+            .catch((err) => {
+                connectionPromise = null;
+                throw err;
+            });
+    }
+    await connectionPromise;
 }
